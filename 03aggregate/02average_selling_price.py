@@ -2,16 +2,36 @@ import pandas as pd
 import numpy as np
 
 def average_selling_price(prices: pd.DataFrame, units_sold: pd.DataFrame) -> pd.DataFrame:
+
+    print(prices)
+    print(units_sold)
+
     df_cnt = units_sold.groupby('product_id')['units'].sum().reset_index()
+
+    print(df_cnt)
+
     df = pd.merge(left=prices, right=units_sold, how='left', on='product_id')   # 笛卡尔积, 可以在连接后的行内进行条件筛选
-    df = df[(df['purchase_date']>=df['start_date']) & (df['purchase_date'] <= df['end_date'])]
+
+    print(df)
+
+    condition = np.where(
+        df['purchase_date'].notna(),
+        (df['purchase_date']>=df['start_date']) & (df['purchase_date'] <= df['end_date']),
+        True
+    )
+    df = df[condition]
+
+    print(f'筛选时间后的\n', df)
+
     df['sum_price'] = df['price'] * df['units']
     df = df[['product_id', 'sum_price']]
     df = df.groupby('product_id')['sum_price'].sum().reset_index()
-    print(df_cnt, f'\n', df)
+
+    print(f'计算了总销售额的df\n', df)
+
     df = df.merge(df_cnt, 'left')
     df['average_price'] = np.where(
-        df['units'] != 0,
+        df['units'].notna(),
         (df['sum_price'] / df['units']).round(2),
         0
     )   # np.where() 就是向量化版本的 condition ? A : B
